@@ -1,5 +1,7 @@
 # Marduk
 
+![](https://upload.wikimedia.org/wikipedia/commons/c/c3/Chaos_Monster_and_Sun_God.png)
+
 A Jupyter kernel for the [PLAN virtual machine](https://github.com/xocore-tech/PLAN).
 Type Plan Asm in a cell, see the reduced PLAN value back.
 
