@@ -3,7 +3,7 @@
 Port of ``vendor/reaver/src/hs/PlanAssembler.hs`` lines 158-306 (Macro enum,
 ``expand1``, ``macroexpand``, ``thunk``, ``lawExp``, ``compileExpr``).
 
-Surface macros supported in the Marduk subset: ``#pin``, ``#law``, ``#app``,
+Surface macros supported in the Plan Asm subset: ``#pin``, ``#law``, ``#app``,
 ``#bind``. ``#macro`` and ``#export`` are recognized but rejected — they
 require module-loading semantics that don't make sense in a notebook (per
 PLAN.md "Out of scope"). User-defined macros (which are created by ``#macro``)
@@ -74,7 +74,7 @@ class Env:
 
     Maps name nats to ``(value, is_macro)`` tuples. ``#bind`` adds entries
     with ``is_macro=False``. ``#macro`` would add ``is_macro=True`` entries,
-    but Marduk rejects ``#macro``, so all entries are values.
+    but the kernel rejects ``#macro``, so all entries are values.
     """
 
     def __init__(self):
@@ -167,7 +167,7 @@ def _resolve_macro(head, locals_dict: dict, env: Env):
         if is_macro:
             # User macros are unsupported in this subset.
             raise MacroError(
-                "user macros are not supported in marduk "
+                "user macros are not supported in plan-kernel "
                 f"(symbol: {_pretty_nat(s)!r})"
             )
         return None
@@ -258,13 +258,13 @@ def _expand1(mac, val, env: Env):
 
     if mac == _MACRO:
         raise MacroError(
-            "#macro is not supported in marduk "
+            "#macro is not supported in plan-kernel "
             "(user macros require module-loading semantics)"
         )
 
     if mac == _EXPORT:
         raise MacroError(
-            "#export is not supported in marduk "
+            "#export is not supported in plan-kernel "
             "(notebooks have no module to export to)"
         )
 

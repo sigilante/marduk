@@ -1,4 +1,4 @@
-"""Tests for ``marduk.prelude`` and its integration with ``MardukEvaluator``.
+"""Tests for ``plan_kernel.prelude`` and its integration with ``PlanKernelEvaluator``.
 
 The prelude auto-loads BPLAN op wrappers (Add, Sub, Mul, Inc, Dec, Eq, ...)
 so that arithmetic and primitive ops work in cell 1 of a fresh notebook.
@@ -6,12 +6,12 @@ so that arithmetic and primitive ops work in cell 1 of a fresh notebook.
 
 import pytest
 
-from marduk.evaluator import MardukEvaluator
-from marduk.expander import Env, eval_form
-from marduk.parser import parse_many
-from marduk.prelude import PRELUDE_NAMES, load_prelude
-from marduk.runtime.bplan_deps import ALL_DEPS
-from marduk.runtime.plan import is_law, is_pin, str_nat
+from plan_kernel.evaluator import PlanKernelEvaluator
+from plan_kernel.expander import Env, eval_form
+from plan_kernel.parser import parse_many
+from plan_kernel.prelude import PRELUDE_NAMES, load_prelude
+from plan_kernel.runtime.bplan_deps import ALL_DEPS
+from plan_kernel.runtime.plan import is_law, is_pin, str_nat
 
 
 # ---------------------------------------------------------------------------
@@ -58,26 +58,26 @@ def test_each_prelude_entry_is_pin_of_law():
 # ---------------------------------------------------------------------------
 
 def test_add_in_fresh_notebook():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     assert ev.eval_cell("(Add 2 3)").value_text == "5"
 
 
 def test_sub_clamps_at_zero():
     """`_b_sub` returns 0 when y >= x; confirm that surfaces."""
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     assert ev.eval_cell("(Sub 5 3)").value_text == "2"
     assert ev.eval_cell("(Sub 3 5)").value_text == "0"
 
 
 def test_mul_div_mod():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     assert ev.eval_cell("(Mul 6 7)").value_text == "42"
     assert ev.eval_cell("(Div 22 7)").value_text == "3"
     assert ev.eval_cell("(Mod 22 7)").value_text == "1"
 
 
 def test_inc_dec():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     assert ev.eval_cell("(Inc 41)").value_text == "42"
     assert ev.eval_cell("(Dec 42)").value_text == "41"
     # Dec of 0 is 0 (saturating).
@@ -85,7 +85,7 @@ def test_inc_dec():
 
 
 def test_comparison():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     # Eq returns 0 / 1.
     assert ev.eval_cell("(Eq 3 3)").value_text == "1"
     assert ev.eval_cell("(Eq 3 4)").value_text == "0"
@@ -93,12 +93,12 @@ def test_comparison():
 
 def test_nested_arithmetic():
     """`(Add 1 (Mul 2 3))` exercises arithmetic composition."""
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     assert ev.eval_cell("(Add 1 (Mul 2 3))").value_text == "7"
 
 
 def test_introspection_ops():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     assert ev.eval_cell("(IsNat 5)").value_text == "1"
     assert ev.eval_cell("(IsNat (#pin 0))").value_text == "0"
     assert ev.eval_cell("(IsPin (#pin 0))").value_text == "1"
@@ -109,7 +109,7 @@ def test_introspection_ops():
 # ---------------------------------------------------------------------------
 
 def test_no_prelude_means_arithmetic_unbound():
-    ev = MardukEvaluator(prelude=False)
+    ev = PlanKernelEvaluator(prelude=False)
     result = ev.eval_cell("(Add 2 3)")
     assert result.error is not None
     assert result.error["stage"] == "expand"
@@ -117,7 +117,7 @@ def test_no_prelude_means_arithmetic_unbound():
 
 
 def test_no_prelude_env_is_empty():
-    ev = MardukEvaluator(prelude=False)
+    ev = PlanKernelEvaluator(prelude=False)
     assert ev.env.names() == []
 
 
@@ -126,7 +126,7 @@ def test_no_prelude_env_is_empty():
 # ---------------------------------------------------------------------------
 
 def test_reset_preserves_prelude():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     # Bind a user name, then reset.
     ev.eval_cell("(#bind k 5)")
     ev.reset()
@@ -137,14 +137,14 @@ def test_reset_preserves_prelude():
 
 
 def test_magic_reset_preserves_prelude():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     ev.eval_cell("(#bind k 5)")
     ev.eval_cell("%reset")
     assert ev.eval_cell("(Add 1 1)").value_text == "2"
 
 
 def test_no_prelude_reset_keeps_env_empty():
-    ev = MardukEvaluator(prelude=False)
+    ev = PlanKernelEvaluator(prelude=False)
     ev.eval_cell("(#bind k 5)")
     ev.reset()
     assert ev.env.names() == []
@@ -157,13 +157,13 @@ def test_no_prelude_reset_keeps_env_empty():
 def test_env_magic_hides_prelude_by_default():
     """A fresh notebook's `%env` should display "(env empty)", not the
     prelude's ~30 entries."""
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     result = ev.eval_cell("%env")
     assert result.value_text == "(env empty)"
 
 
 def test_env_magic_shows_user_bindings_only():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     ev.eval_cell("(#bind alpha 1) (#bind beta 2)")
     result = ev.eval_cell("%env")
     assert result.value_text == "alpha, beta"
@@ -172,7 +172,7 @@ def test_env_magic_shows_user_bindings_only():
 def test_env_no_prelude_shows_all_names():
     """With the prelude opt-out, %env should show whatever the user binds —
     including names like `Add` that would normally be prelude-shadowed."""
-    ev = MardukEvaluator(prelude=False)
+    ev = PlanKernelEvaluator(prelude=False)
     ev.eval_cell('(#bind Add 0)')   # User redefines `Add`.
     result = ev.eval_cell("%env")
     assert result.value_text == "Add"
@@ -183,7 +183,7 @@ def test_env_no_prelude_shows_all_names():
 # ---------------------------------------------------------------------------
 
 def test_user_bind_shadows_prelude():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     # Override Add to return 0 always.
     ev.eval_cell('(#bind Add (#pin (#law "Add" (Add a b) 0)))')
     result = ev.eval_cell("(Add 2 3)")

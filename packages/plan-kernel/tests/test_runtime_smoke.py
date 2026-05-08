@@ -4,10 +4,10 @@ PLAN core opcode and BPLAN dispatch tables. If this fails after running
 shape — investigate before re-syncing.
 """
 
-from marduk.runtime import plan as plan_mod
-from marduk.runtime import bplan as bplan_mod
-from marduk.runtime import bplan_deps as bplan_deps_mod
-from marduk.runtime.plan import (
+from plan_kernel.runtime import plan as plan_mod
+from plan_kernel.runtime import bplan as bplan_mod
+from plan_kernel.runtime import bplan_deps as bplan_deps_mod
+from plan_kernel.runtime.plan import (
     A, L, P, N,
     is_nat, is_pin, is_law, is_app,
     evaluate,

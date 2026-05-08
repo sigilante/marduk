@@ -1,13 +1,14 @@
-# Marduk PLAN Kernel — Implementation Plan
+# plan-kernel — Implementation Plan (historical)
 
-This document is the implementation plan for **Marduk**, a Jupyter kernel for
-the PLAN virtual machine, intended for tutorial use ("type Plan Asm in a cell,
-see the reduced PLAN value back").
+This document is the original implementation plan for what is now
+**plan-kernel**, a Jupyter kernel for the PLAN virtual machine intended for
+tutorial use ("type Plan Asm in a cell, see the reduced PLAN value back"). It
+was written under the project's original name *Marduk*; references below to
+"Marduk" mean this kernel package.
 
-It was written at the end of a planning conversation in the gallowglass repo,
-just before implementation began. The intent is that a fresh session can pick
-this file up, read the referenced source files, and start executing **phase 1**
-without re-deriving any decisions.
+All nine phases recorded here have shipped. The document is preserved for
+historical context — it captures the design as initially negotiated. For
+current architecture / design decisions, see [`PLAN_KERNEL.md`](PLAN_KERNEL.md).
 
 ## Goal
 

@@ -1,11 +1,11 @@
-"""Tests for ``marduk.render`` — structural value renderer."""
+"""Tests for ``plan_kernel.render`` — structural value renderer."""
 
 import re
 
 import pytest
 
-from marduk.render import render_value
-from marduk.runtime.plan import A, L, N, P, str_nat
+from plan_kernel.render import render_value
+from plan_kernel.runtime.plan import A, L, N, P, str_nat
 
 
 # ---------------------------------------------------------------------------

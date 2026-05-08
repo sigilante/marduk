@@ -1,7 +1,7 @@
-"""Tests for ``marduk.magics`` and the evaluator's magic dispatch.
+"""Tests for ``plan_kernel.magics`` and the evaluator's magic dispatch.
 
 Covers ``parse_magics`` standalone and the three magic semantics through
-``MardukEvaluator.eval_cell``:
+``PlanKernelEvaluator.eval_cell``:
 
 - ``%backend`` is per-cell (reverts).
 - ``%reset`` is persistent.
@@ -10,9 +10,9 @@ Covers ``parse_magics`` standalone and the three magic semantics through
 
 import pytest
 
-from marduk.evaluator import MardukEvaluator
-from marduk.magics import MagicDirective, MagicError, parse_magics
-from marduk.runtime.plan import str_nat
+from plan_kernel.evaluator import PlanKernelEvaluator
+from plan_kernel.magics import MagicDirective, MagicError, parse_magics
+from plan_kernel.runtime.plan import str_nat
 
 
 # ---------------------------------------------------------------------------
@@ -106,7 +106,7 @@ def test_magic_directive_line_property():
 # ---------------------------------------------------------------------------
 
 def test_backend_magic_switches_for_cell():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     assert ev.backend_name == "evaluate"
     result = ev.eval_cell("%backend bevaluate\n42")
     assert result.value_text == "42"
@@ -115,7 +115,7 @@ def test_backend_magic_switches_for_cell():
 
 
 def test_backend_magic_to_default():
-    ev = MardukEvaluator(backend="bevaluate")
+    ev = PlanKernelEvaluator(backend="bevaluate")
     result = ev.eval_cell("%backend evaluate\n42")
     assert result.value_text == "42"
     # Reverts to bevaluate (instance default).
@@ -123,7 +123,7 @@ def test_backend_magic_to_default():
 
 
 def test_backend_magic_unknown_value_errors():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     result = ev.eval_cell("%backend reaver\n42")
     assert result.error is not None
     assert result.error["stage"] == "magic"
@@ -133,14 +133,14 @@ def test_backend_magic_unknown_value_errors():
 
 
 def test_backend_magic_no_args_errors():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     result = ev.eval_cell("%backend\n42")
     assert result.error is not None
     assert result.error["stage"] == "magic"
 
 
 def test_backend_magic_too_many_args_errors():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     result = ev.eval_cell("%backend evaluate bevaluate\n42")
     assert result.error is not None
     assert result.error["stage"] == "magic"
@@ -148,7 +148,7 @@ def test_backend_magic_too_many_args_errors():
 
 def test_backend_revert_after_error_in_body():
     """Backend reverts even if the body raises."""
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     ev.eval_cell("%backend bevaluate\nundefined_symbol")
     assert ev.backend_name == "evaluate"
 
@@ -158,7 +158,7 @@ def test_backend_revert_after_error_in_body():
 # ---------------------------------------------------------------------------
 
 def test_reset_magic_clears_env():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     ev.eval_cell("(#bind a 1)")
     assert str_nat("a") in ev.env
     result = ev.eval_cell("%reset")
@@ -168,7 +168,7 @@ def test_reset_magic_clears_env():
 
 
 def test_reset_persists_across_cells():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     ev.eval_cell("(#bind a 1)")
     ev.eval_cell("%reset")
     # New cell — env should still be empty.
@@ -178,14 +178,14 @@ def test_reset_persists_across_cells():
 
 
 def test_reset_with_args_errors():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     result = ev.eval_cell("%reset extra-arg")
     assert result.error is not None
     assert result.error["stage"] == "magic"
 
 
 def test_reset_then_body_in_same_cell():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     ev.eval_cell("(#bind a 1)")
     result = ev.eval_cell("%reset\n(#bind b 2)\nb")
     assert str_nat("a") not in ev.env
@@ -198,13 +198,13 @@ def test_reset_then_body_in_same_cell():
 # ---------------------------------------------------------------------------
 
 def test_env_magic_empty():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     result = ev.eval_cell("%env")
     assert result.value_text == "(env empty)"
 
 
 def test_env_magic_lists_names():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     ev.eval_cell("(#bind alpha 1) (#bind beta 2)")
     result = ev.eval_cell("%env")
     # Sorted, comma-separated.
@@ -212,7 +212,7 @@ def test_env_magic_lists_names():
 
 
 def test_env_magic_with_body_prepends_output():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     ev.eval_cell("(#bind a 1)")
     result = ev.eval_cell("%env\n42")
     # Expected: "a\n42" (env listing then value).
@@ -220,7 +220,7 @@ def test_env_magic_with_body_prepends_output():
 
 
 def test_env_magic_with_args_errors():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     result = ev.eval_cell("%env extra")
     assert result.error is not None
     assert result.error["stage"] == "magic"
@@ -231,7 +231,7 @@ def test_env_magic_with_args_errors():
 # ---------------------------------------------------------------------------
 
 def test_unknown_magic_errors():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     result = ev.eval_cell("%notamagic\n42")
     assert result.error is not None
     assert result.error["stage"] == "magic"
@@ -243,14 +243,14 @@ def test_unknown_magic_errors():
 # ---------------------------------------------------------------------------
 
 def test_reset_then_env_in_one_cell():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     ev.eval_cell("(#bind a 1)")
     result = ev.eval_cell("%reset\n%env")
     assert result.value_text == "(env empty)"
 
 
 def test_backend_and_reset_in_one_cell():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     ev.eval_cell("(#bind a 1)")
     result = ev.eval_cell("%backend bevaluate\n%reset\n42")
     assert result.value_text == "42"
@@ -259,7 +259,7 @@ def test_backend_and_reset_in_one_cell():
 
 
 def test_magic_block_followed_by_blank_line_then_body():
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     result = ev.eval_cell("%env\n\n42")
     # %env on empty env gives "(env empty)", then 42.
     assert result.value_text == "(env empty)\n42"

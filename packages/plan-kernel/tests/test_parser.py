@@ -1,4 +1,4 @@
-"""Tests for ``marduk.parser`` — Plan Asm reader.
+"""Tests for ``plan_kernel.parser`` — Plan Asm reader.
 
 Covers the encoding rules from PlanAssembler.hs (nat/str/sym/list/brak/curl/
 juxt), comments, whitespace, and error reporting (line+col).
@@ -8,8 +8,8 @@ import pathlib
 
 import pytest
 
-from marduk.parser import ParseError, parse, parse_many
-from marduk.runtime.plan import A, N, str_nat
+from plan_kernel.parser import ParseError, parse, parse_many
+from plan_kernel.runtime.plan import A, N, str_nat
 
 
 # ---------------------------------------------------------------------------
@@ -263,7 +263,7 @@ def test_error_position_on_second_line():
 # Round-trip against actual Reaver fixtures.
 # ---------------------------------------------------------------------------
 
-# The Reaver tree is Gallowglass-vendored, not vendored into Marduk. These
+# The Reaver tree is Gallowglass-vendored, not vendored into plan-kernel. These
 # tests are skipped if the upstream tree isn't available locally.
 _REAVER_SRC = pathlib.Path(__file__).resolve().parents[2] / "reaver" / "src" / "plan"
 

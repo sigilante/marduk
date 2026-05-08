@@ -1,13 +1,13 @@
 """Cell-level driver.
 
-``MardukEvaluator`` ties parser → expander → runtime together with a
+``PlanKernelEvaluator`` ties parser → expander → runtime together with a
 notebook-scoped ``Env``. ``eval_cell(source)`` returns a ``CellResult`` that
 the kernel layer (phase 8) translates into a Jupyter MIME bundle.
 
 Pipeline per cell: parse leading magics → apply them → parse_many on the
 remaining body → for each form, macroexpand → thunk → backend evaluator.
 Bind-only and trailing-bind cells produce ``bind <name>`` summary lines;
-expression cells render the last form's value via ``marduk.render``. Per-
+expression cells render the last form's value via ``plan_kernel.render``. Per-
 stage exceptions become structured error envelopes; Python's recursion
 limit is bumped to 200K so user-level recursion gets a fair shot.
 
@@ -38,7 +38,7 @@ from .runtime.plan import (
 )
 
 
-__all__ = ["CellResult", "MardukEvaluator"]
+__all__ = ["CellResult", "PlanKernelEvaluator"]
 
 
 _BIND_NAT = str_nat("#bind")
@@ -117,11 +117,11 @@ def _is_bind_form(form) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# MardukEvaluator.
+# PlanKernelEvaluator.
 # ---------------------------------------------------------------------------
 
-class MardukEvaluator:
-    """Stateful Marduk evaluator.
+class PlanKernelEvaluator:
+    """Stateful plan-kernel evaluator.
 
     Owns a notebook-scoped ``Env``. ``eval_cell(source)`` parses, expands,
     and evaluates one cell, returning a ``CellResult``. Side-effects from

@@ -1,21 +1,22 @@
 #!/usr/bin/env bash
 # Sync vendored PLAN runtime files from a Gallowglass checkout into
-# marduk/runtime/. Updates VENDOR.md's commit SHA and per-file blob SHAs.
+# plan_kernel/runtime/. Updates VENDOR.md's commit SHA and per-file blob SHAs.
 #
 # Usage:
 #   GALLOWGLASS_HOME=/path/to/gallowglass scripts/sync_runtime.sh
 #
-# Defaults to $GALLOWGLASS_HOME, falling back to ../../.. if Marduk lives
-# at gallowglass/vendor/marduk/ (the canonical dev layout).
+# Defaults to $GALLOWGLASS_HOME, falling back to ../../../.. if plan-kernel
+# lives at gallowglass/vendor/marduk/packages/plan-kernel/ (the canonical
+# dev layout).
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MARDUK_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-RUNTIME_DIR="${MARDUK_ROOT}/marduk/runtime"
+PKG_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+RUNTIME_DIR="${PKG_ROOT}/plan_kernel/runtime"
 VENDOR_MD="${RUNTIME_DIR}/VENDOR.md"
 
-GALLOWGLASS="${GALLOWGLASS_HOME:-${MARDUK_ROOT}/../..}"
+GALLOWGLASS="${GALLOWGLASS_HOME:-${PKG_ROOT}/../../../..}"
 GALLOWGLASS="$(cd "${GALLOWGLASS}" && pwd)"
 
 if [ ! -f "${GALLOWGLASS}/dev/harness/plan.py" ]; then
@@ -57,11 +58,11 @@ text = p.read_text()
 text = re.sub(r"(\*\*Commit:\*\*\s+`)[0-9a-f]+(`)", rf"\g<1>{commit}\g<2>", text)
 text = re.sub(r"(\*\*Sync date:\*\*\s+)\S+", rf"\g<1>{today}", text)
 text = re.sub(r"(\*\*Sync method:\*\*\s+).*", r"\g<1>scripts/sync_runtime.sh", text)
-text = re.sub(r"(`marduk/runtime/plan\.py`\s*\|\s*`dev/harness/plan\.py`\s*\|\s*`)[0-9a-f]+(`)",
+text = re.sub(r"(`plan_kernel/runtime/plan\.py`\s*\|\s*`dev/harness/plan\.py`\s*\|\s*`)[0-9a-f]+(`)",
               rf"\g<1>{sha_plan}\g<2>", text)
-text = re.sub(r"(`marduk/runtime/bplan\.py`\s*\|\s*`dev/harness/bplan\.py`\s*\|\s*`)[0-9a-f]+(`)",
+text = re.sub(r"(`plan_kernel/runtime/bplan\.py`\s*\|\s*`dev/harness/bplan\.py`\s*\|\s*`)[0-9a-f]+(`)",
               rf"\g<1>{sha_bplan}\g<2>", text)
-text = re.sub(r"(`marduk/runtime/bplan_deps\.py`\s*\|\s*`bootstrap/bplan_deps\.py`\s*\|\s*`)[0-9a-f]+(`)",
+text = re.sub(r"(`plan_kernel/runtime/bplan_deps\.py`\s*\|\s*`bootstrap/bplan_deps\.py`\s*\|\s*`)[0-9a-f]+(`)",
               rf"\g<1>{sha_deps}\g<2>", text)
 p.write_text(text)
 PY

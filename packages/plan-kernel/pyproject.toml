@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "marduk-plan"
+name = "plan-kernel"
 version = "0.1.0"
 description = "Jupyter kernel for the PLAN virtual machine — type Plan Asm in a cell, see the reduced PLAN value back."
 readme = "README.md"
@@ -39,11 +39,11 @@ Homepage = "https://github.com/sigilante/marduk"
 Repository = "https://github.com/sigilante/marduk"
 
 [tool.setuptools.packages.find]
-include = ["marduk*"]
+include = ["plan_kernel*"]
 exclude = ["tests*"]
 
 [tool.setuptools.package-data]
-"marduk.runtime" = ["VENDOR.md"]
+"plan_kernel.runtime" = ["VENDOR.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -3,14 +3,14 @@
 Each fixture is a complete Plan Asm cell — definitions plus a final
 expression — that exercises one teaching point (combinators, arithmetic,
 Elim, Church booleans). The tests load each, run it through
-:class:`MardukEvaluator`, and assert the expected final value.
+:class:`PlanKernelEvaluator`, and assert the expected final value.
 """
 
 import pathlib
 
 import pytest
 
-from marduk.evaluator import MardukEvaluator
+from plan_kernel.evaluator import PlanKernelEvaluator
 
 
 _FIXTURES = pathlib.Path(__file__).parent / "fixtures"
@@ -18,7 +18,7 @@ _FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 
 def _run(name: str) -> str:
     src = (_FIXTURES / f"{name}.plan").read_text()
-    ev = MardukEvaluator()
+    ev = PlanKernelEvaluator()
     result = ev.eval_cell(src)
     assert result.error is None, f"{name}: {result.error}"
     return result.value_text

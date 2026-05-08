@@ -2,16 +2,16 @@
 
 Two surface areas:
 
-- :func:`_kernel_main` — invoked via ``python -m marduk`` (i.e.
-  ``marduk/__main__.py``). Lazy-imports ``ipykernel`` and launches the
+- :func:`_kernel_main` — invoked via ``python -m plan_kernel`` (i.e.
+  ``plan_kernel/__main__.py``). Lazy-imports ``ipykernel`` and launches the
   kernel via ``IPKernelApp.launch_instance``.
 
-- :func:`_install_kernelspec` — registers ``Marduk (PLAN)`` with Jupyter's
+- :func:`_install_kernelspec` — registers ``PLAN`` with Jupyter's
   ``KernelSpecManager`` so the kernel picker shows it. The kernel.json's
-  ``argv`` is ``[sys.executable, '-m', 'marduk', '-f', '{connection_file}']``,
+  ``argv`` is ``[sys.executable, '-m', 'plan_kernel', '-f', '{connection_file}']``,
   so launching the kernel reuses the Python interpreter that ran ``install``.
 
-The ``MardukKernel`` class is defined inside :func:`_kernel_main` so that
+The ``PlanKernel`` class is defined inside :func:`_kernel_main` so that
 importing this module doesn't pull in ``ipykernel`` — that keeps test
 environments without ``ipykernel`` (and the kernel-startup path itself)
 fast and importable.
@@ -34,9 +34,9 @@ __all__ = [
 ]
 
 
-_KERNEL_NAME = "marduk"
-_DISPLAY_NAME = "Marduk (PLAN)"
-_IMPLEMENTATION = "Marduk"
+_KERNEL_NAME = "plan_kernel"
+_DISPLAY_NAME = "PLAN"
+_IMPLEMENTATION = "plan-kernel"
 
 
 def _kernel_main() -> None:
@@ -45,9 +45,9 @@ def _kernel_main() -> None:
     from ipykernel.kernelbase import Kernel
 
     from . import __version__
-    from .evaluator import MardukEvaluator
+    from .evaluator import PlanKernelEvaluator
 
-    class MardukKernel(Kernel):
+    class PlanKernel(Kernel):
         implementation = _IMPLEMENTATION
         implementation_version = __version__
         language_info = {
@@ -57,14 +57,14 @@ def _kernel_main() -> None:
             "pygments_lexer": "lisp",
         }
         banner = (
-            "Marduk PLAN kernel — type Plan Asm in a cell, see the reduced "
+            "PLAN kernel (plan-kernel) — type Plan Asm in a cell, see the reduced "
             "PLAN value back. The BPLAN op prelude is auto-loaded; %backend, "
             "%reset, %env are available as cell magics."
         )
 
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self._evaluator = MardukEvaluator()
+            self._evaluator = PlanKernelEvaluator()
 
         def do_execute(self, code, silent, store_history=True,
                        user_expressions=None, allow_stdin=False, *,
@@ -118,7 +118,7 @@ def _kernel_main() -> None:
                 "user_expressions": {},
             }
 
-    IPKernelApp.launch_instance(kernel_class=MardukKernel)
+    IPKernelApp.launch_instance(kernel_class=PlanKernel)
 
 
 def _format_error(envelope: dict) -> str:
@@ -140,7 +140,7 @@ def _format_error(envelope: dict) -> str:
 
 
 def _install_kernelspec(user: bool = True, prefix: str | None = None) -> str:
-    """Register the Marduk kernelspec with Jupyter.
+    """Register the plan-kernel kernelspec with Jupyter.
 
     Returns the install path (the directory containing ``kernel.json``).
 
@@ -151,7 +151,7 @@ def _install_kernelspec(user: bool = True, prefix: str | None = None) -> str:
         ``False`` together with a ``prefix`` for an isolated install.
     prefix
         Optional prefix path. When set, the kernelspec is written under
-        ``<prefix>/share/jupyter/kernels/marduk/``. Useful for venv-scoped
+        ``<prefix>/share/jupyter/kernels/plan-kernel/``. Useful for venv-scoped
         installs (``--prefix .venv``).
     """
     from jupyter_client.kernelspec import KernelSpecManager
@@ -160,14 +160,14 @@ def _install_kernelspec(user: bool = True, prefix: str | None = None) -> str:
         "argv": [
             sys.executable,
             "-m",
-            "marduk",
+            "plan_kernel",
             "-f",
             "{connection_file}",
         ],
         "display_name": _DISPLAY_NAME,
         "language": "plan",
         "metadata": {
-            "description": "Marduk — Jupyter kernel for the PLAN virtual machine",
+            "description": "plan-kernel — Jupyter kernel for the PLAN virtual machine",
         },
     }
 
@@ -189,20 +189,20 @@ def _cli_main(argv: list[str]) -> int:
     """CLI entry point. Returns process exit code.
 
     Subcommands:
-    - ``marduk install [--prefix DIR] [--system]`` registers the
+    - ``plan-kernel install [--prefix DIR] [--system]`` registers the
       kernelspec and prints the install path.
     - Any other invocation (typically ``-f <connection_file>`` from
       Jupyter) falls through to :func:`_kernel_main`.
     """
     if len(argv) >= 2 and argv[1] == "install":
         parser = argparse.ArgumentParser(
-            prog="marduk install",
-            description="Register the Marduk kernelspec with Jupyter.",
+            prog="plan-kernel install",
+            description="Register the plan-kernel kernelspec with Jupyter.",
         )
         parser.add_argument(
             "--prefix",
             default=None,
-            help="install under PREFIX/share/jupyter/kernels/marduk (overrides --user)",
+            help="install under PREFIX/share/jupyter/kernels/plan-kernel (overrides --user)",
         )
         parser.add_argument(
             "--system",
@@ -212,7 +212,7 @@ def _cli_main(argv: list[str]) -> int:
         args = parser.parse_args(argv[2:])
         user = not args.system and args.prefix is None
         installed = _install_kernelspec(user=user, prefix=args.prefix)
-        print(f"Installed Marduk kernelspec at {installed}")
+        print(f"Installed plan-kernel kernelspec at {installed}")
         return 0
 
     _kernel_main()

@@ -1,4 +1,4 @@
-"""Tests for ``marduk.expander`` — macro expander.
+"""Tests for ``plan_kernel.expander`` — macro expander.
 
 Drives the expander end-to-end (parse → macroexpand → thunk → evaluate)
 against the four supported macros (#pin, #law, #app, #bind) and confirms
@@ -7,9 +7,9 @@ that #macro / #export are rejected with a clear error.
 
 import pytest
 
-from marduk.expander import Env, MacroError, eval_form, macroexpand, thunk
-from marduk.parser import parse_many
-from marduk.runtime.plan import (
+from plan_kernel.expander import Env, MacroError, eval_form, macroexpand, thunk
+from plan_kernel.parser import parse_many
+from plan_kernel.runtime.plan import (
     A, L, N, P,
     is_app, is_law, is_nat, is_pin,
     evaluate, str_nat,

@@ -2,8 +2,12 @@
 
 The Python files in this directory are **vendored copies** of the PLAN runtime
 maintained in the Gallowglass repo. They are treated as read-only inside
-Marduk; do not edit them in place. Re-sync via `scripts/sync_runtime.sh` (or
-hand-copy and update this file's SHA block).
+plan-kernel; do not edit them in place. Re-sync via `scripts/sync_runtime.sh`
+(or hand-copy and update this file's SHA block).
+
+This vendoring is provisional — once the Marduk runtime (`packages/marduk/`)
+lands and replaces `dev/harness/plan.py` upstream, the kernel will depend on
+Marduk as a real package and this directory will be removed.
 
 ## Source
 
@@ -17,9 +21,9 @@ hand-copy and update this file's SHA block).
 
 | Vendored path                       | Source path (in gallowglass)     | Source blob SHA                            |
 |-------------------------------------|----------------------------------|--------------------------------------------|
-| `marduk/runtime/plan.py`            | `dev/harness/plan.py`            | `215bd00dceab5c3f9631741119d8b70045e524eb` |
-| `marduk/runtime/bplan.py`           | `dev/harness/bplan.py`           | `6be8416118afb7096a3ac465705562f3f0b474ea` |
-| `marduk/runtime/bplan_deps.py`      | `bootstrap/bplan_deps.py`        | `86c90ab20f97dcf6caf110dc2c3519ef8d2c1223` |
+| `plan_kernel/runtime/plan.py`            | `dev/harness/plan.py`            | `215bd00dceab5c3f9631741119d8b70045e524eb` |
+| `plan_kernel/runtime/bplan.py`           | `dev/harness/bplan.py`           | `6be8416118afb7096a3ac465705562f3f0b474ea` |
+| `plan_kernel/runtime/bplan_deps.py`      | `bootstrap/bplan_deps.py`        | `86c90ab20f97dcf6caf110dc2c3519ef8d2c1223` |
 
 (Blob SHAs are `git hash-object` of the upstream file at the sync commit. They
 are *not* the post-rewrite SHAs of the vendored copy — they pin upstream

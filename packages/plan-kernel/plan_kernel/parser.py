@@ -2,7 +2,7 @@
 
 Port of `vendor/reaver/src/hs/PlanAssembler.hs` lines 32-114 (the
 `parse` / `pseq` / `parseMany` block). Output is a PLAN ``Val`` — using
-the constructors from ``marduk.runtime.plan`` — not a separate surface AST.
+the constructors from ``plan_kernel.runtime.plan`` — not a separate surface AST.
 This matches PlanAssembler's semantics: parsing and macroexpansion both
 operate on PLAN values.
 
