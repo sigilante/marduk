@@ -445,9 +445,10 @@ def S(o: int, arg: Val) -> Val:
             return C(p, l, ap, z, m, o_arg)
         raise PlanError(("S0: unknown inner opcode", inner, arg))
     if o == 66:
-        raise NotImplementedError(
-            "BPLAN op 66: implemented in marduk.runtime.bplan (not yet wired)"
-        )
+        # Lazy import: bplan.py imports from core, so the import at module
+        # top would cycle. The first real call lands the table.
+        from . import bplan
+        return bplan.dispatch(arg)
     if o == 82:
         raise NotImplementedError(
             "RPLAN op 82: implemented in marduk.runtime.rplan (not yet wired)"

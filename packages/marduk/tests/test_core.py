@@ -242,13 +242,8 @@ class TestElim:
 # ---------------------------------------------------------------------------
 
 class TestUnimplementedDispatchers:
-    """``<66>`` and ``<82>`` raise NotImplementedError until their op
-    tables get wired up. This is the canary for forgetting to plumb a
-    dispatcher when the time comes."""
-
-    def test_bplan_raises_not_implemented(self):
-        with pytest.raises(NotImplementedError, match="BPLAN"):
-            evaluate(app(BPLAN, app(Nat(0), Nat(1))))
+    """``<82>`` (RPLAN) raises NotImplementedError until its op table
+    gets wired up. ``<66>`` (BPLAN) is wired — see ``test_bplan.py``."""
 
     def test_rplan_raises_not_implemented(self):
         with pytest.raises(NotImplementedError, match="RPLAN"):
