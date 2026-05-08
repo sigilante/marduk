@@ -38,6 +38,7 @@ import subprocess
 import tempfile
 import unittest
 
+from marduk import set_jets, jets_enabled
 from marduk.asm import Env, eval_form, parse_many, load_prelude
 
 
@@ -166,23 +167,47 @@ def _reaver_eval(plan_text: str, value_name: str = "main") -> int:
 
 @requires_reaver
 class TestMardukReaverEquivalence(unittest.TestCase):
-    """For each fixture, Marduk and Reaver agree on ``main : Nat``.
+    """For each fixture, Marduk (jets-on AND jets-off) and Reaver all
+    agree on ``main : Nat``.
+
+    The three-way assertion catches two distinct failure modes:
+
+    * Marduk vs Reaver divergence — a real semantics bug in Marduk.
+    * Marduk-jets-on vs Marduk-jets-off divergence — the jet overlay
+      is leaking effects (it shouldn't, since no jets are registered
+      in this suite, but the lookup machinery itself runs and a
+      regression there would surface here).
 
     Fixtures kept compact: the goal is *coverage* of language features,
     not depth in any one. Nats are kept above 256 so Reaver's
     ``showVal`` definitely renders them as decimals (the ``Lsh 32``
     trick covers smaller values too, but the > 256 convention also
-    keeps the raw fixture readable as a number)."""
+    keeps the raw fixture readable as a number).
+    """
+
+    def setUp(self):
+        # Make sure each test starts with the documented default.
+        # ``addCleanup`` restores it even if the test raises.
+        self._prev_jets = jets_enabled()
+        self.addCleanup(set_jets, self._prev_jets)
 
     def _assert_equiv(self, plan_text: str, value_name: str = "main"):
-        marduk = _marduk_eval(plan_text, value_name)
+        # Marduk under both jet modes — independent runs against fresh
+        # ``Env`` instances, so neither mode contaminates the other.
+        set_jets(True)
+        marduk_jetted = _marduk_eval(plan_text, value_name)
+        set_jets(False)
+        marduk_spec = _marduk_eval(plan_text, value_name)
+        # Reaver is invoked once (slow); both Marduk modes must match it.
         reaver = _reaver_eval(plan_text, value_name)
-        self.assertEqual(
-            marduk, reaver,
-            f"Marduk/Reaver divergence on {value_name!r}: "
-            f"marduk={marduk} reaver={reaver}\n"
-            f"--- source ---\n{plan_text}",
+
+        msg = (
+            f"three-way divergence on {value_name!r}: "
+            f"jetted={marduk_jetted} spec={marduk_spec} reaver={reaver}\n"
+            f"--- source ---\n{plan_text}"
         )
+        self.assertEqual(marduk_jetted, marduk_spec, msg)
+        self.assertEqual(marduk_jetted, reaver, msg)
 
     # --- arithmetic --------------------------------------------------------
 
