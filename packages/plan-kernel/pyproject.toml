@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "plan-kernel"
 version = "0.1.0"
-description = "Jupyter kernel for the PLAN virtual machine — type Plan Asm in a cell, see the reduced PLAN value back."
+description = "Jupyter kernel for interactive PLAN evaluation."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
