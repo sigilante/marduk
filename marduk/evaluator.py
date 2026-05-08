@@ -4,14 +4,20 @@
 notebook-scoped ``Env``. ``eval_cell(source)`` returns a ``CellResult`` that
 the kernel layer (phase 8) translates into a Jupyter MIME bundle.
 
-Phase 4 scope: parse, expand, thunk, evaluate; bind-only cells produce
-summary lines; per-stage exceptions become structured error envelopes;
-Python's recursion limit is bumped while evaluating so user-level recursion
-gets a reasonable shot before tripping ``RecursionError``.
+Pipeline per cell: parse leading magics → apply them → parse_many on the
+remaining body → for each form, macroexpand → thunk → backend evaluator.
+Bind-only and trailing-bind cells produce ``bind <name>`` summary lines;
+expression cells render the last form's value via ``marduk.render``. Per-
+stage exceptions become structured error envelopes; Python's recursion
+limit is bumped to 200K so user-level recursion gets a fair shot.
 
-Deferred to later phases:
-- ``%backend`` / ``%reset`` / ``%env`` magics — phase 6.
-- BPLAN op prelude auto-loading — phase 7.
+Magic semantics:
+- ``%backend NAME`` is per-cell — the backend reverts at end-of-cell.
+- ``%reset`` is persistent — cleared bindings stay cleared.
+- ``%env`` is read-only.
+
+Deferred to phase 7: BPLAN op prelude auto-loading. ``%reset`` will
+preserve the prelude once that lands.
 """
 
 from __future__ import annotations
@@ -20,6 +26,7 @@ import sys
 from dataclasses import dataclass
 
 from .expander import Env, MacroError, macroexpand, thunk
+from .magics import MagicDirective, MagicError, parse_magics
 from .parser import ParseError, parse_many
 from .render import render_value
 from .runtime.plan import (
@@ -76,6 +83,8 @@ def _stage_for(err: Exception) -> str:
         return "parse"
     if isinstance(err, MacroError):
         return "expand"
+    if isinstance(err, MagicError):
+        return "magic"
     if isinstance(err, RecursionError):
         return "runtime"
     return "internal"
@@ -141,26 +150,59 @@ class MardukEvaluator:
         if not source.strip():
             return CellResult(decls_only=True)
 
+        directives, body = parse_magics(source)
+
+        # Save backend state for cell-scoped %backend reverts. (env/reset
+        # changes deliberately persist.)
+        saved_backend = self._backend
+        saved_backend_name = self._backend_name
         try:
-            forms = parse_many(source)
+            magic_outputs: list[str] = []
+            try:
+                for d in directives:
+                    out = self._apply_magic(d)
+                    if out is not None:
+                        magic_outputs.append(out)
+            except MagicError as e:
+                return CellResult(error=_error_envelope("magic", e))
+
+            return self._eval_body(body, magic_outputs)
+        finally:
+            self._backend = saved_backend
+            self._backend_name = saved_backend_name
+
+    def _eval_body(self, body: str, magic_outputs: list[str]) -> CellResult:
+        if not body.strip():
+            if magic_outputs:
+                return CellResult(value_text="\n".join(magic_outputs))
+            return CellResult(decls_only=True)
+
+        try:
+            forms = parse_many(body)
         except ParseError as e:
             return CellResult(error=_error_envelope("parse", e))
         except Exception as e:    # pragma: no cover — defensive
             return CellResult(error=_error_envelope("internal", e))
 
         if not forms:
+            if magic_outputs:
+                return CellResult(value_text="\n".join(magic_outputs))
             return CellResult(decls_only=True)
 
         old_limit = sys.getrecursionlimit()
         sys.setrecursionlimit(max(old_limit, 200_000))
         try:
-            return self._evaluate_forms(forms)
+            result = self._evaluate_forms(forms)
         except (MacroError, RecursionError) as e:
             return CellResult(error=_error_envelope(_stage_for(e), e))
         except Exception as e:
             return CellResult(error=_error_envelope("internal", e))
         finally:
             sys.setrecursionlimit(old_limit)
+
+        if magic_outputs and result.value_text is not None:
+            result.value_text = "\n".join(magic_outputs) + "\n" + result.value_text
+        return result
 
     def reset(self) -> None:
         """Clear all bindings. (Prelude reload happens in phase 7.)"""
@@ -189,6 +231,28 @@ class MardukEvaluator:
         raise ValueError(
             f"unknown backend: {name!r} (expected 'evaluate' or 'bevaluate')"
         )
+
+    def _apply_magic(self, d: MagicDirective) -> str | None:
+        """Apply one magic directive. Returns optional display output."""
+        if d.name == "backend":
+            if len(d.args) != 1:
+                raise MagicError(f"{d.line}: %backend takes exactly one argument")
+            try:
+                self._set_backend(d.args[0])
+            except ValueError as e:
+                raise MagicError(f"{d.line}: {e}") from e
+            return None
+        if d.name == "reset":
+            if d.args:
+                raise MagicError(f"{d.line}: %reset takes no arguments")
+            self.reset()
+            return None
+        if d.name == "env":
+            if d.args:
+                raise MagicError(f"{d.line}: %env takes no arguments")
+            names = sorted(_pretty_nat(n) for n in self.env.names())
+            return ", ".join(names) if names else "(env empty)"
+        raise MagicError(f"unknown magic: %{d.name}")
 
     def _eval_one(self, form):
         """Run one form through expand → thunk → backend."""
