@@ -114,22 +114,23 @@ class Val:
     so that ``update`` can mutate-in-place.
     """
 
-    __slots__ = ("box", "type")
+    __slots__ = ("box",)
     __match_args__ = ("val",)
 
     # Lookup table indexed by ``len(box[0])`` for non-nat shapes.
-    # Construction goes through this once; ``.type`` then becomes a
-    # plain instance-attribute read (vs the original property that
-    # re-derived the type on every access — see profile in PR #100,
-    # ~30% of runtime).
+    # Construction goes through this once at __init__; subsequent
+    # reads of ``.type`` come from ``box[1]``. Storing the type
+    # alongside the data IN the box keeps it consistent across all
+    # Val aliases that share a box (via ``update``'s aliasing
+    # discipline) — a per-instance attribute cache breaks when one
+    # Val updates and its siblings keep their stale tag.
     _TYPE_BY_LEN = ("hol", "pin", "app", "law")
 
     def __init__(self, val: Any) -> None:
-        self.box = [val]
         if isinstance(val, int):
-            self.type = "nat"
+            self.box = [val, "nat"]
         else:
-            self.type = Val._TYPE_BY_LEN[len(val)]
+            self.box = [val, Val._TYPE_BY_LEN[len(val)]]
 
     def update(self, other: "Val") -> None:
         """Replace self's contents with other's, in a way that aliases of
@@ -137,11 +138,18 @@ class Val:
         app cyclically updates its own cell) and by L (when a letrec slot
         gets its computed binding installed).
 
-        The cached ``type`` attribute is updated alongside the box swap so
-        consumers always observe a consistent (box, type) pair."""
+        Mutates the existing box's data + type slots before reseating
+        ``self.box`` to share other's box outright. The dual update
+        keeps any Val that already aliases ``self.box`` consistent
+        with the new contents — that's the cyclic-update contract that
+        letrec / Y-combinator patterns depend on."""
         self.box[0] = other.box[0]
+        self.box[1] = other.box[1]
         self.box = other.box
-        self.type = other.type
+
+    @property
+    def type(self) -> str:
+        return self.box[1]
 
     # ---- Attribute accessors driven by the data shape ------------------
 
@@ -214,6 +222,13 @@ class Val:
         if isinstance(other, int) and self.type == "nat":
             return self.nat == other
         return NotImplemented
+
+    def __format__(self, spec: str) -> str:
+        # Allow numeric format specs (e.g. ``#x``, ``d``, ``b``) on nat Vals
+        # so that f-strings like ``f"{val:#x}"`` work transparently.
+        if spec and self.type == "nat":
+            return format(self.nat, spec)
+        return format(repr(self), spec) if spec else repr(self)
 
     def __hash__(self) -> int:
         # Vals are mutable cells; hashing by identity is the only sane choice.

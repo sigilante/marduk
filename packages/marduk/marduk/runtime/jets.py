@@ -42,7 +42,7 @@ from .core import Val
 
 __all__ = [
     # Registry
-    "register_jet", "lookup_jet", "clear_jets",
+    "register_jet", "register_named_jet", "lookup_jet", "clear_jets",
     # Flag
     "set_jets", "jets_enabled",
     # Type alias
@@ -61,6 +61,24 @@ JetFn = Callable[..., Val]
 _REGISTRY: dict[int, JetFn] = {}
 _KEEPALIVE: list[Val] = []
 _JETS_ENABLED: bool = True
+
+# Content-addressed jet registry keyed by (name_nat, arity, body_hash).
+# Jets registered here are looked up by Law content rather than Val
+# identity. This is stable across bevaluate() calls: the same Law always
+# has the same name nat, arity, and body structure regardless of which
+# Python Val object was produced by the converter.
+#
+# The body hash distinguishes Laws that share name and arity — for
+# example, Core.Text.Prim.text_len and text_nat both declare name
+# "text_field" with arity 1. The body hash is computed at registration
+# and at lookup using repr(law.body), which produces the same output for
+# the same PLAN body structure regardless of which Val objects it used.
+#
+# _NAMED_KEYS is a fast filter: (name_nat, arity) → True for any
+# registered jet. Most Law saturations will miss here in O(1) without
+# computing a body hash.
+_BODY_REGISTRY: dict[tuple[int, int, int], JetFn] = {}
+_NAMED_KEYS: set[tuple[int, int]] = set()
 
 
 def set_jets(enabled: bool) -> None:
@@ -81,7 +99,7 @@ def jets_enabled() -> bool:
 
 
 def register_jet(law: Val, fn: JetFn) -> None:
-    """Register ``fn`` as the native implementation of ``law``.
+    """Register ``fn`` as the native implementation of ``law`` by Val identity.
 
     ``law`` must be a Marduk ``Val`` of type ``"law"``. ``fn`` will
     be called with the law's saturated arguments (positional, in
@@ -98,18 +116,53 @@ def register_jet(law: Val, fn: JetFn) -> None:
     _KEEPALIVE.append(law)
 
 
+def register_named_jet(name_nat: int, arity: int, fn: JetFn,
+                        body_hash: int) -> None:
+    """Register ``fn`` as the native implementation for the Law whose
+    name encodes to ``name_nat``, arity is ``arity``, and body hashes to
+    ``body_hash``.
+
+    Unlike ``register_jet``, this does not key on Val identity. The key
+    is (name_nat, arity, body_hash) — all three derived from Law content
+    that is stable across bevaluate() calls. The body hash uses
+    ``hash(repr(law.body))`` which produces the same value for the same
+    PLAN structure across calls within a single Python process (hash
+    randomisation applies per-process, not per-call).
+
+    Follows Sol's principle that jet matching is a codegen-time concern
+    driven by content, not a runtime identity lookup.
+    """
+    _BODY_REGISTRY[(name_nat, arity, body_hash)] = fn
+    _NAMED_KEYS.add((name_nat, arity))
+
+
 def lookup_jet(law: Val) -> JetFn | None:
     """Return the registered jet for ``law``, or ``None``.
 
+    Three-tier lookup:
+    1. Identity registry (``id(law.box)``) — fast, used for Val-identity
+       registrations from ``register_jet``.
+    2. Named-key fast filter — O(1) set membership test to avoid
+       computing a body hash for laws that definitely have no jet.
+    3. Body-content registry (``(name_nat, arity, body_hash)``) — exact
+       match when a law's name+arity is in the filtered set.
+
     Honours the global flag — if ``jets_enabled()`` is ``False``,
-    always returns ``None`` so the runtime falls through to the
-    spec path.
+    always returns ``None`` so the runtime falls through to the spec path.
     """
     if not _JETS_ENABLED:
         return None
     if not isinstance(law, Val):
         return None
-    return _REGISTRY.get(id(law.box))
+    fn = _REGISTRY.get(id(law.box))
+    if fn is not None:
+        return fn
+    if law.type != "law" or law.name.type != "nat" or law.args.type != "nat":
+        return None
+    key2 = (law.name.nat, law.args.nat)
+    if key2 not in _NAMED_KEYS:
+        return None
+    return _BODY_REGISTRY.get((law.name.nat, law.args.nat, hash(repr(law.body))))
 
 
 def clear_jets() -> None:
@@ -118,3 +171,5 @@ def clear_jets() -> None:
     tests to keep registrations from leaking across cases."""
     _REGISTRY.clear()
     _KEEPALIVE.clear()
+    _BODY_REGISTRY.clear()
+    _NAMED_KEYS.clear()
