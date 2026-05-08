@@ -1,5 +1,7 @@
 # Marduk
 
+![](https://upload.wikimedia.org/wikipedia/commons/c/c3/Chaos_Monster_and_Sun_God.png)
+
 A standalone Python runtime for the [PLAN virtual machine](https://github.com/xocore-tech/PLAN), plus a Jupyter kernel for tutorial / interactive use.
 
 This repository is a monorepo following the structure of [`sigilante/pinochle`](https://github.com/sigilante/pinochle). Each `packages/<name>/` directory is independently installable and ships as its own PyPI distribution.
