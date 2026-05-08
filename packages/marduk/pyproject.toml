@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "marduk"
 version = "0.1.0"
-description = "Standalone Python runtime for the PLAN virtual machine. Spec-faithful core, BPLAN op coverage, optional jet overlay."
+description = "Python implementation of the PLAN instruction set."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
