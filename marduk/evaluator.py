@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from .expander import Env, MacroError, macroexpand, thunk
 from .magics import MagicDirective, MagicError, parse_magics
 from .parser import ParseError, parse_many
+from .prelude import load_prelude
 from .render import render_value
 from .runtime.plan import (
     is_nat,
@@ -131,16 +132,25 @@ class MardukEvaluator:
     env
         A pre-existing ``Env`` to use; if ``None``, a fresh empty one is
         created. Useful when the kernel needs to share an env across
-        instances or pre-load a prelude.
+        instances.
     backend
         Either ``"evaluate"`` (formal Python evaluator, default) or
-        ``"bevaluate"`` (jet-aware, faster for arithmetic). Phase 6's
+        ``"bevaluate"`` (jet-aware, faster for arithmetic). The
         ``%backend`` magic switches this at cell granularity.
+    prelude
+        If ``True`` (default), load the BPLAN op prelude into ``env`` so
+        ``(Add 2 3)`` and friends work in cell 1. ``%reset`` reloads the
+        prelude. Pass ``False`` for a fully empty env.
     """
 
-    def __init__(self, env: Env | None = None, backend: str = "evaluate"):
+    def __init__(self, env: Env | None = None, backend: str = "evaluate",
+                 prelude: bool = True):
         self.env = env if env is not None else Env()
         self._set_backend(backend)
+        self._prelude_loaded = bool(prelude)
+        self._prelude_names: set[int] = set()
+        if prelude:
+            self._prelude_names = load_prelude(self.env)
 
     # ------------------------------------------------------------------
     # Public entry points.
@@ -205,8 +215,10 @@ class MardukEvaluator:
         return result
 
     def reset(self) -> None:
-        """Clear all bindings. (Prelude reload happens in phase 7.)"""
+        """Clear all user bindings. The prelude (if loaded) is reloaded."""
         self.env.reset()
+        if self._prelude_loaded:
+            self._prelude_names = load_prelude(self.env)
 
     @property
     def backend_name(self) -> str:
@@ -250,8 +262,12 @@ class MardukEvaluator:
         if d.name == "env":
             if d.args:
                 raise MagicError(f"{d.line}: %env takes no arguments")
-            names = sorted(_pretty_nat(n) for n in self.env.names())
-            return ", ".join(names) if names else "(env empty)"
+            user_names = sorted(
+                _pretty_nat(n)
+                for n in self.env.names()
+                if n not in self._prelude_names
+            )
+            return ", ".join(user_names) if user_names else "(env empty)"
         raise MagicError(f"unknown magic: %{d.name}")
 
     def _eval_one(self, form):
