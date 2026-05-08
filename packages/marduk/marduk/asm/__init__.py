@@ -31,6 +31,7 @@ from .expander import (
     eval_form,
 )
 from .printer import dump
+from .prelude import load_prelude, make_bplan_wrapper, PRELUDE_NAMES, BPLAN
 
 
 __all__ = [
@@ -40,4 +41,6 @@ __all__ = [
     "Env", "MacroError", "macroexpand", "thunk", "eval_form",
     # printer
     "dump",
+    # prelude
+    "load_prelude", "make_bplan_wrapper", "PRELUDE_NAMES", "BPLAN",
 ]

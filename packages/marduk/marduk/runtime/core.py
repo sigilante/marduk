@@ -8,6 +8,17 @@ fix, and cyclic environments work because evaluation can update a cell's
 contents while other references to it observe the new value (and detect
 loops via the ``Hol`` sentinel).
 
+Depth: ``E`` itself is iterative (the spec's ``Eo`` tail call after
+cyclic update is a Python ``while`` loop, not a recursive call), so
+linear-recursive PLAN code doesn't consume one Python frame per step.
+``B``/``L``/``R`` are still recursive — they walk the body's let-binding
+spine and the App tree of each form, both bounded by the body's
+structural depth rather than the recursion length, but that bound is not
+zero. We raise Python's recursion limit at import time so tutorial-scale
+programs comfortably exceed the default 1000-frame ceiling without
+trampolining the body interpreter; a real CEK-style refactor of
+B/L/R/X is forward work.
+
 Origin: this file is a modernization of Sol's 270-line proof-of-concept
 preserved verbatim at gallowglass/``vendor/death-to-the-corporation-old-plan.py``.
 The structural ideas — the Val cell, the spec rules I/A/N/R/L/B/C/P/S/X/F/E
@@ -43,7 +54,18 @@ they ride on top via a separate primop table in a subsequent commit.
 
 from __future__ import annotations
 
+import sys
 from typing import Any
+
+
+# Bump Python's recursion limit at import time. The body interpreter
+# (B/L/R/X) is still recursive, so linear-recursive PLAN programs of
+# meaningful depth need more than the default 1000 frames. 50_000 is a
+# pragmatic compromise — past that, native stack pressure starts to
+# matter regardless of Python's nominal limit. Callers that want to
+# clamp this further can ``sys.setrecursionlimit`` after import.
+if sys.getrecursionlimit() < 50_000:
+    sys.setrecursionlimit(50_000)
 
 
 __all__ = [
@@ -565,18 +587,36 @@ def E(o: Val) -> Val:
 
       Ho1 = o#Xoo; Eo           -- arity-1 (saturated): cyclic update + re-E
       Hoa = o                   -- not yet saturated: no-op
+
+    The spec's ``Eo`` after cyclic update is a tail call — re-evaluate
+    the same cell whose contents just changed. We implement it as a
+    ``while`` loop instead of a recursive call so deep saturation
+    chains (linear-recursive Plan Asm of the form
+    ``(self (compute-next-args))``) don't consume Python frames per
+    step. This is the trampoline that turns O(N)-stack into O(1)-stack
+    for tail-recursive PLAN code.
+
+    The recursive ``E(o.head)`` for the spine remains — that depth is
+    bounded by the App tree (number of pending arguments to a saturated
+    head, typically a small constant), not the recursion length, and
+    is a natural fit for Python's call stack.
     """
-    t = o.type
-    if t == "hol":
-        raise PlanLoop("E: hole encountered")
-    if t == "app":
+    while True:
+        t = o.type
+        if t == "hol":
+            raise PlanLoop("E: hole encountered")
+        if t != "app":
+            return o
         E(o.head)
-        if A(o.head) == 1:
-            # The cyclic update: o's box becomes whatever X(o,o) produces,
-            # AND any other Val sharing this box sees the update too.
-            o.update(X(o, o))
-            E(o)
-    return o
+        if A(o.head) != 1:
+            return o
+        # Saturated: cyclic update, then loop on the (now updated)
+        # cell. The update mutates ``o``'s box in place; both this
+        # local handle and any other Val sharing the box observe the
+        # new contents. Looping back to the top re-runs E on whatever
+        # value the step produced — i.e. the spec's ``Eo`` tail call,
+        # without a Python frame.
+        o.update(X(o, o))
 
 
 # ---------------------------------------------------------------------------

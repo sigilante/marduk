@@ -224,6 +224,38 @@ class TestIntrospection:
         # Non-pin: Reaver returns N 0.
         assert n(call("Unpin", Nat(99))) == 0
 
+    def test_sz_app_spine(self):
+        # A two-element list ``Cons 0 (Cons 1 nil)`` shaped as
+        # App(App(N(0), v0), v1) has spine [N(0), v0, v1] — size 2.
+        v = App(App(Nat(0), Nat(7)), Nat(8))
+        assert n(call("Sz", v)) == 2
+        # Three-element: App(App(App(N(0), a), b), c) — size 3.
+        v3 = App(App(App(Nat(0), Nat(1)), Nat(2)), Nat(3))
+        assert n(call("Sz", v3)) == 3
+
+    def test_sz_non_app_is_zero(self):
+        assert n(call("Sz", Nat(99))) == 0
+        assert n(call("Sz", Pin(Nat(7)))) == 0
+
+
+class TestDiagnostics:
+
+    def test_nil_recognises_zero(self):
+        assert n(call("Nil", Nat(0))) == 1
+        assert n(call("Nil", Nat(1))) == 0
+        assert n(call("Nil", Pin(Nat(0)))) == 0
+        assert n(call("Nil", App(Nat(0), Nat(0)))) == 0
+
+    def test_trace_returns_second_arg(self, capsys):
+        # Trace writes its first arg via dump() to stderr, returns the
+        # second. We don't pin down the exact stderr formatting (it
+        # differs from Reaver's showVal); we just check the return
+        # value is the second arg and that *something* was emitted.
+        result = call("Trace", Nat(42), Nat(99))
+        assert n(result) == 99
+        captured = capsys.readouterr()
+        assert "42" in captured.err
+
 
 # ---------------------------------------------------------------------------
 # Sequencing / strict apply

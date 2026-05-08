@@ -364,3 +364,28 @@ class TestForcing:
         force(pinned)
         # The pin should still be a pin; force doesn't unwrap pins.
         assert pinned.type == "pin"
+
+
+# ---------------------------------------------------------------------------
+# Group 7: depth — the E trampoline + raised recursion limit
+# ---------------------------------------------------------------------------
+
+class TestDepth:
+    """Regression: ``E``'s saturation step is iterative (the spec's
+    ``Eo`` after cyclic update is a Python ``while`` loop, not a
+    recursive call). Combined with the import-time recursion-limit
+    bump, linear-recursive PLAN of meaningful depth runs without
+    stack exhaustion. If either of those pieces regresses, this test
+    catches it."""
+
+    def test_deep_self_application_via_identity(self):
+        # Build identity directly and apply it 3000 times in a chain:
+        # (id (id (id ... (id 7)))) — 3000 nested Apps, each saturating
+        # one level. The trampoline turns each saturation step into a
+        # loop iteration rather than a recursive call.
+        ident = law_of(name=0, arity=1, body=Nat(1))
+        v = Nat(7)
+        for _ in range(3000):
+            v = App(ident, v)
+        result = evaluate(v)
+        assert result.type == "nat" and result.nat == 7

@@ -4,14 +4,25 @@ Mirrors the ``op 66 [...]`` cases in ``vendor/reaver/src/hs/Plan.hs``:
 the saturated form ``(<66> (name args...))`` looks up ``name`` in the op
 table and runs the corresponding Python implementation.
 
-Coverage in this module is the **pure** subset of Reaver's BPLAN ops:
-arithmetic, comparison, boolean, bit/byte manipulation, fixed-width
-truncation, value introspection, the small Case2..Case16 dispatchers,
-and the named aliases for the three core constructions (Pin / Law /
-Elim). Effects (Throw, Trace, Save, Load, Read, Write, Try, Up,
-DeepSeq, Equal) and collection ops (Row, Rep, Slice, Weld, Ix, …) are
-not implemented yet — calling them raises ``NotImplementedError`` with
-the op name and string-nat encoding for diagnosis.
+Coverage in this module is the **pure** subset of Reaver's BPLAN ops
+plus a few near-pure diagnostics:
+
+* Construction aliases (Pin / Law / Elim)
+* Arithmetic (Inc, Dec, Add, Sub, Mul, Div, Mod, Lsh, Rsh)
+* Comparison (Eq, Ne, Lt, Le, Gt, Ge, Cmp)
+* Boolean / control (Truth, Or, And, If, Ifz)
+* Bit / byte manipulation (Test, Set, Clear, Bex, Nib, Load8, Store8,
+  Trunc{,8,16,32,64}, Bits, Bytes)
+* Value introspection (Type, IsPin, IsLaw, IsApp, IsNat, Nat, Arity,
+  Name, Body, Unpin, Hd, Sz)
+* Small-case dispatchers (Case2..Case16)
+* Sequencing / strict apply (Seq, Seq2, Seq3, Sap, Sap2, Force)
+* Diagnostics (Trace, Nil)
+
+Effects (Throw, Save, Load, Read, Write, Try, Up, DeepSeq, Equal),
+collection ops (Row, Rep, Slice, Weld, Ix*), and the variadic Case op
+are not implemented yet — calling them raises ``NotImplementedError``
+with the op name + string-nat encoding for diagnosis.
 
 Adding an op: register it with ``@op("Name", arity)`` and write a small
 function that takes the args list (length matches ``arity``) and returns
@@ -22,6 +33,7 @@ inspect — most arithmetic/comparison ops force via ``_nat`` which calls
 
 from __future__ import annotations
 
+import sys
 from typing import Callable
 
 from .core import (
@@ -496,6 +508,50 @@ def _hd(args):
         # spine (((f a) b) c), this is f — i.e. spine[0].
         return v.spine[0]
     return v
+
+
+@op("Sz", 1)
+def _sz(args):
+    """Spine size: ``planSz (A f xs) = length xs``; ``planSz _ = 0``.
+
+    For a binary App spine ``App(App(App(f, x1), x2), x3)``, the
+    flattened spine is ``[f, x1, x2, x3]`` so the arg count is
+    ``len(spine) - 1``."""
+    v = args[0]
+    E(v)
+    if v.type == "app":
+        return Nat(len(v.spine) - 1)
+    return Nat(0)
+
+
+# ---------------------------------------------------------------------------
+# Diagnostics
+# ---------------------------------------------------------------------------
+
+@op("Trace", 2)
+def _trace(args):
+    """Emit the first arg's Plan Asm form to stderr, return the second.
+
+    Reaver's ``Trace`` uses ``showVal`` which is the canonical PLAN
+    pretty-printer. Marduk uses :func:`marduk.asm.dump` which produces
+    re-parseable Plan Asm. The output formats differ in whitespace and
+    string-quoting heuristics but carry the same information; do not
+    rely on byte-identical match between the two runtimes."""
+    from ..asm.printer import dump
+    x, y = args
+    E(x)
+    sys.stderr.write(dump(x) + "\n")
+    sys.stderr.flush()
+    return y
+
+
+@op("Nil", 1)
+def _nil(args):
+    """``planNil x = if x == N 0 then N 1 else N 0`` — test if ``x`` is
+    the empty list (encoded as ``Nat(0)``)."""
+    x = args[0]
+    E(x)
+    return Nat(1) if (x.type == "nat" and x.nat == 0) else Nat(0)
 
 
 # ---------------------------------------------------------------------------
