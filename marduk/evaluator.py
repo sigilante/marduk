@@ -12,8 +12,6 @@ gets a reasonable shot before tripping ``RecursionError``.
 Deferred to later phases:
 - ``%backend`` / ``%reset`` / ``%env`` magics — phase 6.
 - BPLAN op prelude auto-loading — phase 7.
-- Pretty structural rendering (text + HTML) — phase 5; the placeholder
-  ``_render_value`` here is replaced when ``marduk.render`` lands.
 """
 
 from __future__ import annotations
@@ -23,9 +21,9 @@ from dataclasses import dataclass
 
 from .expander import Env, MacroError, macroexpand, thunk
 from .parser import ParseError, parse_many
+from .render import render_value
 from .runtime.plan import (
-    A, L, P,
-    is_app, is_law, is_nat, is_pin,
+    is_nat,
     nat_str, str_nat,
     evaluate,
     _unapp,
@@ -106,36 +104,6 @@ def _is_bind_form(form) -> bool:
     )
 
 
-def _render_value(val) -> tuple[str, str | None]:
-    """Placeholder structural renderer. Phase 5 replaces this with a proper
-    ``marduk.render.render_value`` that produces colourised HTML alongside
-    text/plain. Until then we return ``(text, None)`` so the Jupyter client
-    falls back to plain-text display.
-    """
-    return _render_text(val, depth=0), None
-
-
-_RENDER_MAX_DEPTH = 32
-
-
-def _render_text(val, depth: int) -> str:
-    if depth >= _RENDER_MAX_DEPTH:
-        return "..."
-    if is_nat(val):
-        # Display nats as decimal. Strings encoded as nats stay numeric here;
-        # the proper renderer (phase 5) will detect the printable-ascii case.
-        return str(val)
-    if is_pin(val):
-        return f"<{_render_text(val.val, depth + 1)}>"
-    if is_law(val):
-        return (
-            f"{{{_render_text(val.name, depth + 1)} "
-            f"{val.arity} "
-            f"{_render_text(val.body, depth + 1)}}}"
-        )
-    if is_app(val):
-        return f"({_render_text(val.fun, depth + 1)} {_render_text(val.arg, depth + 1)})"
-    return repr(val)
 
 
 # ---------------------------------------------------------------------------
@@ -249,5 +217,5 @@ class MardukEvaluator:
                 return CellResult(decls_only=True)    # pragma: no cover
             return CellResult(value_text="\n".join(bind_summaries))
 
-        text, html = _render_value(last_value)
+        text, html = render_value(last_value)
         return CellResult(value_text=text, value_html=html)
