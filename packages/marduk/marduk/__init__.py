@@ -13,8 +13,15 @@ Public surface, re-exported from :mod:`marduk.runtime`:
 * ``force(v)`` — force the App spine to NF (pins and law bodies stay opaque).
 * ``PlanError``, ``PlanLoop`` — exceptions for stuck states and hole-loops.
 
-BPLAN (outer ``<66>``) and RPLAN (outer ``<82>``) primitive coverage and
-Plan Asm I/O ride on top of this core in subsequent commits.
+Optional jet overlay (see :mod:`marduk.runtime.jets`):
+
+* ``register_jet(law, fn)`` — install a native Python implementation
+  for a specific Law value.
+* ``set_jets(bool)`` / ``jets_enabled()`` — global on/off switch. Use
+  ``set_jets(False)`` to force every law to evaluate via the
+  spec-faithful path (correctness oracle / differential testing).
+
+Plan Asm I/O lives in :mod:`marduk.asm`.
 """
 
 from .runtime import (
@@ -22,6 +29,8 @@ from .runtime import (
     Hol, Nat, Pin, App, Law,
     evaluate, force,
     PlanError, PlanLoop,
+    register_jet, lookup_jet, clear_jets,
+    set_jets, jets_enabled,
 )
 
 __version__ = "0.0.1"
@@ -31,4 +40,6 @@ __all__ = [
     "Hol", "Nat", "Pin", "App", "Law",
     "evaluate", "force",
     "PlanError", "PlanLoop",
+    "register_jet", "lookup_jet", "clear_jets",
+    "set_jets", "jets_enabled",
 ]

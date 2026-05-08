@@ -20,10 +20,20 @@ from .core import (
     evaluate, force,
     PlanError, PlanLoop,
 )
+from .jets import (
+    register_jet, lookup_jet, clear_jets,
+    set_jets, jets_enabled,
+)
 
 __all__ = [
+    # Value types
     "Val",
     "Hol", "Nat", "Pin", "App", "Law",
+    # Drivers
     "evaluate", "force",
+    # Exceptions
     "PlanError", "PlanLoop",
+    # Jet overlay
+    "register_jet", "lookup_jet", "clear_jets",
+    "set_jets", "jets_enabled",
 ]

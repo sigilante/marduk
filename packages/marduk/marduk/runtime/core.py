@@ -476,6 +476,13 @@ def X(k: Val, e: Val) -> Val:
       Xe(f x)     = Xef              -- App: descend into f
       Xe{a m b}   = Baaebb           -- bare law: build env + run body
       Xe<{a m b}> = Baaebb           -- pinned law: same
+
+    When the leaf is a Law (bare or pinned) and the optional jet
+    overlay is enabled (the default), the registry is consulted before
+    the spec path. A registered jet runs as native Python with the
+    law's saturated arguments; the result must match the spec path.
+    See :mod:`marduk.runtime.jets` for the registry API and the global
+    enable/disable flag.
     """
     while True:
         t = k.type
@@ -491,10 +498,16 @@ def X(k: Val, e: Val) -> Val:
                 E(arg)
                 return S(inner.nat, arg)
             if inner.type == "law":
+                jet_result = _try_jet(inner, e)
+                if jet_result is not None:
+                    return jet_result
                 return B(inner.args.nat, inner.args.nat, e,
                          inner.body, inner.body)
             raise PlanError(("X: pin'd non-nat-non-law in head", k))
         if t == "law":
+            jet_result = _try_jet(k, e)
+            if jet_result is not None:
+                return jet_result
             return B(k.args.nat, k.args.nat, e, k.body, k.body)
         if t == "hol":
             raise PlanLoop("X: hole in head position")
@@ -503,6 +516,23 @@ def X(k: Val, e: Val) -> Val:
         # enters the saturation path. If we arrive here something else has
         # gone wrong upstream.
         raise PlanError(("X: bare nat in head; should not reach here", k, e))
+
+
+def _try_jet(law: Val, e: Val) -> Val | None:
+    """If ``law`` has a registered jet AND the jet overlay is enabled,
+    run it with the saturated args and return the result. Otherwise
+    return ``None`` so the caller falls through to the spec path."""
+    # Lazy import: jets.py imports core; importing it at top would cycle.
+    from . import jets
+    fn = jets.lookup_jet(law)
+    if fn is None:
+        return None
+    # ``e`` is the saturated App; its spine is [head, arg1, ...argN].
+    # We pass the args (positional, in declaration order) — the head
+    # itself is the law (or a pin around it) and isn't a value the
+    # jet author sees.
+    spine = e.spine
+    return fn(*spine[1:])
 
 
 def F(o: Val) -> Val:
