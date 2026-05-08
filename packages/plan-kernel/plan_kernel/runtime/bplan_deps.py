@@ -45,9 +45,20 @@ PRELUDE_INTRINSICS: dict[str, int] = {
     'Div': 2,
     'Mod': 2,
     'Dec': 1,
-    # Comparison
+    # Comparison — full set
     'Eq':  2,
+    'Ne':  2,
+    'Lt':  2,
+    'Le':  2,
+    'Gt':  2,
+    'Ge':  2,
     'Cmp': 2,
+    # Boolean / control
+    'Truth': 1,
+    'Or':    2,
+    'And':   2,
+    'If':    3,
+    'Ifz':   3,
     # Bit ops (used by bytes encoding)
     'Lsh': 2,
     'Rsh': 2,
@@ -61,10 +72,30 @@ PRELUDE_INTRINSICS: dict[str, int] = {
     'Hd':    1,
     'Sz':    1,
     'Unpin': 1,
+    'Arity': 1,
+    'Name':  1,
+    'Body':  1,
     # Sequencing
     'Seq':  2,
     # Diagnostics
     'Trace': 2,
+    # Small Case dispatchers — Case<N> takes one nat plus N-1 indexed
+    # branches plus a fallback, so total arity is N+1.
+    'Case2':   3,
+    'Case3':   4,
+    'Case4':   5,
+    'Case5':   6,
+    'Case6':   7,
+    'Case7':   8,
+    'Case8':   9,
+    'Case9':  10,
+    'Case10': 11,
+    'Case11': 12,
+    'Case12': 13,
+    'Case13': 14,
+    'Case14': 15,
+    'Case15': 16,
+    'Case16': 17,
 }
 
 
