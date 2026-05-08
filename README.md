@@ -12,12 +12,13 @@ reduction at a time.
 
 ## Status
 
-Pre-alpha. The PLAN runtime is vendored and tested (phase 1, complete).
-The parser, expander, evaluator, kernel, and prelude are under active
-development. See [`PLAN.md`](PLAN.md) for the implementation plan and the
-current phase. **Until phase 8 lands, the kernel module itself does not
-exist** — the install steps below that depend on `python -m marduk` will
-fail with `No module named marduk.__main__` until then.
+Alpha. Phases 1–8 of [`PLAN.md`](PLAN.md) are complete: vendored runtime,
+Plan Asm parser, macro expander, cell-level evaluator, structural
+renderer, cell magics, BPLAN op prelude, and the Jupyter kernel + CLI.
+A fresh notebook can evaluate `(Add 2 3)` in cell 1.
+
+Phase 9 (worked-example notebook + tutorial polish) is the remaining
+in-scope work before the first PyPI release.
 
 ## Install
 
@@ -48,7 +49,7 @@ pytest                                                 # confirm the runtime smo
 ```
 
 To register the kernel with Jupyter so it appears in the notebook kernel
-picker (requires phase 8):
+picker:
 
 ```bash
 python -m marduk install               # user-level install (writes to ~/.local/share/jupyter/kernels/marduk/)
