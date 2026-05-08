@@ -1,20 +1,86 @@
 # Marduk
 
+Python implementation of the PLAN Combinator Calculus with a Jupyter kernel for interactive evaluation.  Emulates the [Reaver](https://github.com/sol-plunder/reaver) system.
+
+**Status:  Marduk successfully implements PLAN and the `plan` Jupyter kernel works.  While there may be bugfixes or minor QOL updates, the project nears completion.**
+
 ![](https://upload.wikimedia.org/wikipedia/commons/c/c3/Chaos_Monster_and_Sun_God.png)
 
-A standalone Python runtime for the [PLAN virtual machine](https://github.com/xocore-tech/PLAN), plus a Jupyter kernel for tutorial / interactive use.
+This project consists of two packages:
 
-This repository is a monorepo following the structure of [`sigilante/pinochle`](https://github.com/sigilante/pinochle). Each `packages/<name>/` directory is independently installable and ships as its own PyPI distribution.
+1. `marduk`: Core library implementing PLAN evaluation.
+2. `plan-kernel`: Jupyter kernel for interactive PLAN/BPLAN evaluation.
 
-## Packages
+## Marduk - Core Library
 
-| Path                         | PyPI dist     | Purpose                                                                |
-|------------------------------|---------------|------------------------------------------------------------------------|
-| [`packages/marduk/`](packages/marduk/)         | `marduk`      | Standalone PLAN/BPLAN runtime — spec-faithful core + jet overlay.      |
-| [`packages/plan-kernel/`](packages/plan-kernel/) | `plan-kernel` | Jupyter kernel for PLAN. Type Plan Asm in a cell, see the reduced value back. |
+Library supplying a Python implementation of the PLAN Combinator Calculus.
 
-`plan-kernel` consumes Marduk as its runtime backend.
+### Installation
 
-## History
+```bash
+git clone https://github.com/sigilante/marduk.git
+pip install ./packages/plan
+# or from GitHub:
+pip install git+https://github.com/sigilante/marduk.git#subdirectory=packages/marduk
+```
 
-Both packages descend from a single Jupyter-kernel-only project that was originally called *Marduk*. As the runtime portion grew into a generally useful artifact in its own right, it took the name; the kernel was renamed to `plan-kernel`. See [`packages/marduk/README.md`](packages/marduk/README.md) for the runtime's design notes and [`packages/plan-kernel/README.md`](packages/plan-kernel/README.md) for kernel install / usage.
+### Usage
+
+```python
+from marduk import plan, parse_noun
+
+# Parse and evaluate Nock expressions
+result = plan(42, parse_noun("[0 1]"))
+print(result)  # 42
+
+# Increment
+result = plan(41, parse_noun("[4 0 1]"))
+print(result)  # 42
+```
+
+See the [README](packages/marduk/README.md) for further details.
+
+## PLAN Kernel
+
+A Jupyter kernel for interactive PLAN evaluation.
+
+### Installation
+
+```bash
+# Install the core library first
+pip install marduk
+
+# Then install the kernel
+pip install plan-kernel
+plan-kernel-install
+```
+
+### Usage
+
+Start Jupyter:
+
+```bash
+jupyter notebook
+```
+
+Create a new notebook and select "PLAN" as the kernel.
+
+```
+:subject [1 2 3 4 5]
+```
+
+```
+:formula [4 4 4 4 0 6]
+```
+
+See the [README](packages/plan_kernel/README.md) for further details and the [TUTORIAL](packages/plan_kernel/TUTORIAL.ipynb) for more examples of use.
+
+## Examples
+
+* TODO
+
+## License
+
+This project is licensed under the MIT License - see [LICENSE](./LICENSE) for details.
+
+## Versions
