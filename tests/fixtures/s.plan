@@ -1,0 +1,15 @@
+; S combinator: S f g x = (f x) (g x).
+; Combined with K: S K K x = K x (K x) = x — i.e. SKK is identity.
+
+(#bind k
+  (#pin
+    (#law "k" (k a b)
+      a)))
+
+(#bind s
+  (#pin
+    (#law "s" (s f g x)
+      ((f x) (g x)))))
+
+; SKK applied to 42 should yield 42.
+(s k k 42)

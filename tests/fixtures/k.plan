@@ -1,0 +1,9 @@
+; K combinator: K a b = a.
+; Always returns its first argument; the constant function.
+
+(#bind k
+  (#pin
+    (#law "k" (k a b)
+      a)))
+
+(k 7 99)

@@ -1,0 +1,18 @@
+; Elim — PLAN's universal dispatch (opcode 2).
+; Six-arg form: (Elim p l a z m o) where o is the scrutinee:
+;   Pin v   → (p v)
+;   Law a m b → (l a m b)
+;   App f x → (a f x)
+;   Nat 0   → z
+;   Nat n+1 → (m n)
+;
+; Here we use Elim on a nat to implement absolute-zero detection:
+;   is_zero n = if n == 0 then 1 else 0
+
+(#bind is_zero
+  (#pin
+    (#law "is_zero" (is_zero n)
+      (Elim 0 0 0 1 (#law "step" (step _) 0) n))))
+
+; (is_zero 0) → 1.
+(is_zero 0)

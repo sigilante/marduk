@@ -1,0 +1,9 @@
+; Identity: I x = x.
+; The simplest possible PLAN law — a single-arg function returning its arg.
+
+(#bind id
+  (#pin
+    (#law "id" (id x)
+      x)))
+
+(id 42)

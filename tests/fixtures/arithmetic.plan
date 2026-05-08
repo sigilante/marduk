@@ -1,0 +1,5 @@
+; Arithmetic via the BPLAN op prelude.
+; Add, Sub, Mul, Inc, Dec are auto-bound by Marduk on kernel start.
+
+; Compose: (Add 1 (Mul 2 3)) = 1 + 6 = 7.
+(Add 1 (Mul 2 3))

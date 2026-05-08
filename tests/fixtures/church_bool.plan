@@ -1,0 +1,36 @@
+; Church booleans: encode True / False as two-arg functions that select
+; either their first or second argument.
+;
+;   True  a b = a    (= K)
+;   False a b = b    (= KI)
+;
+; Boolean operators are then ordinary function application:
+;   And p q   = p q False    (q if p, else False)
+;   Or  p q   = p True q     (True if p, else q)
+;   Not p     = p False True (swap branches)
+
+(#bind T
+  (#pin
+    (#law "T" (T a b) a)))
+
+(#bind F
+  (#pin
+    (#law "F" (F a b) b)))
+
+(#bind And
+  (#pin
+    (#law "And" (And p q)
+      (p q F))))
+
+(#bind Or
+  (#pin
+    (#law "Or" (Or p q)
+      (p T q))))
+
+(#bind Not
+  (#pin
+    (#law "Not" (Not p)
+      (p F T))))
+
+; (And T F a b) = T F a b = (F a b) = b. Pick a=10, b=20 → 20.
+(And T F 10 20)

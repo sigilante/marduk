@@ -12,13 +12,13 @@ reduction at a time.
 
 ## Status
 
-Alpha. Phases 1–8 of [`PLAN.md`](PLAN.md) are complete: vendored runtime,
-Plan Asm parser, macro expander, cell-level evaluator, structural
-renderer, cell magics, BPLAN op prelude, and the Jupyter kernel + CLI.
-A fresh notebook can evaluate `(Add 2 3)` in cell 1.
+Alpha. All nine phases of [`PLAN.md`](PLAN.md) are complete: vendored
+runtime, Plan Asm parser, macro expander, cell-level evaluator,
+structural renderer, cell magics, BPLAN op prelude, Jupyter kernel +
+CLI, and a starter set of teaching fixtures + tour notebook. A fresh
+notebook can evaluate `(Add 2 3)` in cell 1.
 
-Phase 9 (worked-example notebook + tutorial polish) is the remaining
-in-scope work before the first PyPI release.
+PyPI publication is the next step.
 
 ## Install
 
@@ -80,6 +80,53 @@ jupyter kernelspec remove marduk        # remove kernelspec only
 pip uninstall marduk-plan               # remove the package
 ```
 
+## Quickstart
+
+A cell is a sequence of Plan Asm forms. The result of the last non-bind
+form displays; bind-only cells render `bind <name>` summary lines.
+
+```text
+(Add 2 3)
+```
+
+```text
+5
+```
+
+Define a law and apply it:
+
+```text
+(#bind id
+  (#pin
+    (#law "id" (id x)
+      x)))
+
+(id 42)
+```
+
+```text
+42
+```
+
+The K combinator and a use:
+
+```text
+(#bind k
+  (#pin
+    (#law "k" (k a b)
+      a)))
+
+(k 7 99)
+```
+
+```text
+7
+```
+
+The fixtures in [`tests/fixtures/`](tests/fixtures/) cover identity,
+K, S, arithmetic, `Elim` on a nat, and Church booleans — copy any of
+them into a cell to see them run.
+
 ## What's a cell?
 
 A cell is a sequence of Plan Asm forms — the same syntax accepted by the
@@ -90,6 +137,49 @@ that don't make sense in a notebook).
 
 Supported macros: `#pin`, `#law`, `#app`, `#bind`. The BPLAN op prelude
 auto-loads on kernel start, so `(Add 2 3)` works in cell 1.
+
+## Magic reference
+
+Magics live on lines that start with `%`, at the very top of the cell.
+Comments and blank lines above them stop magic parsing — magics must
+lead the cell body.
+
+| Magic                     | Scope        | Effect                                                                  |
+|---------------------------|--------------|-------------------------------------------------------------------------|
+| `%backend evaluate`       | this cell    | Use the formal Python evaluator (default).                              |
+| `%backend bevaluate`      | this cell    | Use the jet-aware evaluator. Faster for arithmetic-heavy programs.      |
+| `%reset`                  | persistent   | Drop all user bindings. The BPLAN op prelude is reloaded.                |
+| `%env`                    | read-only    | Display user bindings (sorted, comma-separated). Prelude names are filtered out. |
+
+`%backend` reverts at end-of-cell. `%reset` is permanent until the next
+`%reset`. `%env`'s output prepends to the cell's value text when the
+cell also has a body.
+
+## Troubleshooting
+
+**`No module named 'marduk'` when launching the kernel.** The kernel.json's
+`argv` uses the Python interpreter that ran `marduk install`. Reinstall
+from the active venv: `pip install -e '.[dev]'` and `python -m marduk install`.
+
+**Marduk not in the kernel picker.** Confirm the install:
+`jupyter kernelspec list` should show a `marduk` row. If `--prefix .venv`
+was used, only that venv's Jupyter sees it; install without `--prefix`
+for a user-wide registration.
+
+**`unbound: <name>` for a name that's clearly defined.** Macro expansion
+runs before the body's evaluation, so a bind form `(#bind name expr)`
+must appear *before* any reference to `name` in cell-execution order.
+Within a cell, this is the form order; across cells, the binding from
+cell N is in scope for cell N+1.
+
+**Recursive laws hit `RecursionError`.** Marduk bumps Python's recursion
+limit to 200K during evaluation — past that, the BPLAN harness's own
+depth guard fires. Most tutorial-scale recursion is fine; deep
+factorials or Y-combinator-driven loops may exhaust it.
+
+**`%env` shows nothing.** It filters the BPLAN op prelude. Pass
+`prelude=False` when constructing `MardukEvaluator` programmatically to
+see *all* names, or just rely on the filtered view in the kernel.
 
 ## Naming
 
