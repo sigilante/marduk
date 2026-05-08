@@ -33,20 +33,24 @@ in this monorepo.
 The PyPI distribution is `plan-kernel`; the Python module is `plan_kernel`
 (so that `python -m plan_kernel` and `import plan_kernel` work cleanly).
 
-## Vendor provenance
+## Runtime: Marduk
 
-The PLAN runtime in `plan_kernel/runtime/{plan.py, bplan.py, bplan_deps.py}`
-is **vendored** from Gallowglass. Provenance, source SHAs, and sync policy
-are recorded in [`plan_kernel/runtime/VENDOR.md`](plan_kernel/runtime/VENDOR.md).
-Re-sync via [`scripts/sync_runtime.sh`](scripts/sync_runtime.sh).
+Phase E replaced the legacy vendored runtime with a dependency on the
+[`marduk`](../marduk/) package. plan-kernel now imports its core values,
+evaluator, BPLAN op table, and Plan Asm reader/expander/printer from
+`marduk` and `marduk.asm`.
 
-The vendoring is provisional. Once the Marduk runtime in
-[`packages/marduk/`](../marduk/) is ready (spec-faithful core + BPLAN op
-coverage + jet overlay), it replaces both this vendored copy and the
-upstream files in `dev/harness/`. plan-kernel will then depend on Marduk as
-a real package and this directory will be removed. The import boundary is
-kept clean (`plan_kernel.runtime.plan` is a stable path) so that transition
-is painless.
+`plan_kernel.runtime.{plan, bplan}` and `plan_kernel.{parser, expander}`
+remain as small re-export shims — keeping the legacy import paths
+working for existing call sites. `plan_kernel.runtime.bplan_deps` keeps
+its standalone ``ALL_DEPS`` config (the per-arity table the prelude
+iterates to build wrapper laws); the runtime files are no longer
+vendored byte copies.
+
+The shim layer is the seam where new-API and legacy-API meet:
+``plan_kernel.runtime.plan.{A, L, N, P}`` map to Marduk's
+``App``/``Law``/``Nat``/``Pin`` and auto-coerce raw ints to ``Nat`` for
+back-compat with code that did ``P(5)``.
 
 ## Repo layout
 

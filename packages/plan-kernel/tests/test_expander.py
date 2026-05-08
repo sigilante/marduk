@@ -86,7 +86,7 @@ def test_law_identity():
     results, _ = _drive('(#law "id" (id x) x)')
     [law] = results
     assert is_law(law)
-    assert law.arity == 1
+    assert law.args == 1
     assert law.name == str_nat("id")
     # Body references slot 1 (the arg `x`).
     assert law.body == N(1)
@@ -97,7 +97,7 @@ def test_law_two_args_returns_first():
     results, _ = _drive('(#law "k" (k a b) a)')
     [law] = results
     assert is_law(law)
-    assert law.arity == 2
+    assert law.args == 2
     # `a` is at slot 1, `b` is at slot 2.
     assert law.body == N(1)
 
@@ -121,13 +121,13 @@ def test_law_with_let_bind():
     results, _ = _drive('(#law "letted" (f x) y(1 x) (0 y x))')
     [law] = results
     assert is_law(law)
-    assert law.arity == 1
+    assert law.args == 1
     # Body: (1 bind_ir body_ir) where bind_ir = (0 (1)) (compiled `(1 x)`)
     # — actually `x1(1 x)` means bind x1 = (1 x), so the bind-expr is the
     # quoted nat 1 wrapped... let's just confirm it's a (1 _ _) shape.
     assert is_app(law.body)
-    assert is_app(law.body.fun)
-    assert is_nat(law.body.fun.fun) and law.body.fun.fun == 1
+    assert is_app(law.body.head)
+    assert is_nat(law.body.head.head) and law.body.head.head == 1
 
 
 def test_law_zero_args_rejected():
@@ -197,7 +197,7 @@ def test_silly_plan_first_three_forms():
     assert results[1] == str_nat("a")
     a_entry = env.get(str_nat("a"))
     assert is_pin(a_entry[0])
-    assert is_law(a_entry[0].val)
+    assert is_law(a_entry[0].item)
     # Form 3: a Pin(Law) value (no bind, returns the pin itself).
     assert is_pin(results[2])
 

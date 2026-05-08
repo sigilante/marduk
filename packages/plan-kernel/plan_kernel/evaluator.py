@@ -96,6 +96,10 @@ def _stage_for(err: Exception) -> str:
 # ---------------------------------------------------------------------------
 
 def _pretty_nat(n) -> str:
+    # ``n`` may be a Marduk ``Val`` (post Phase E swap) or a raw int
+    # (legacy callers). Normalize to int via ``.nat`` when needed.
+    if hasattr(n, "type") and n.type == "nat":
+        n = n.nat
     if not isinstance(n, int):
         return repr(n)
     s = nat_str(n)
@@ -109,8 +113,8 @@ def _is_bind_form(form) -> bool:
     parts = _unapp(form)
     return (
         len(parts) >= 2
-        and is_nat(parts[0]) and parts[0] == 0
-        and is_nat(parts[1]) and parts[1] == _BIND_NAT
+        and is_nat(parts[0]) and parts[0].nat == 0
+        and is_nat(parts[1]) and parts[1].nat == _BIND_NAT
     )
 
 

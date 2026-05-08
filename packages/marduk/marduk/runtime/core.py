@@ -176,9 +176,15 @@ class Val:
     # ---- Equality and display ------------------------------------------
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Val):
-            return NotImplemented
-        return self.val == other.val
+        if isinstance(other, Val):
+            return self.val == other.val
+        # Convenience: a nat-typed Val compares equal to a Python int with
+        # matching value. This makes ``some_val == 0`` and similar idioms
+        # work without unpacking ``.nat`` everywhere. Non-nat types still
+        # return NotImplemented so integer comparison stays type-safe.
+        if isinstance(other, int) and self.type == "nat":
+            return self.nat == other
+        return NotImplemented
 
     def __hash__(self) -> int:
         # Vals are mutable cells; hashing by identity is the only sane choice.

@@ -89,7 +89,13 @@ class Env:
         """Return ``(value, is_macro)`` or ``None``."""
         return self._d.get(key)
 
-    def put(self, key: int, val: Val, is_macro: bool = False) -> None:
+    def put(self, key: int, val, is_macro: bool = False) -> None:
+        # Convenience: auto-wrap a Python int as a ``Nat`` so callers can
+        # do ``env.put(str_nat("answer"), 42)`` without first coercing.
+        # Anything that isn't a Val and isn't an int is stored as-is —
+        # the runtime will surface the error if it's malformed.
+        if isinstance(val, int) and not isinstance(val, Val):
+            val = Nat(val)
         self._d[key] = (val, is_macro)
 
     def reset(self) -> None:

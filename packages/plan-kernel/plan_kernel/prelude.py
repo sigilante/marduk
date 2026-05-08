@@ -13,19 +13,21 @@ constructs the boot.plan-style wrapper:
 and evaluates it against the supplied env. After loading, expressions like
 ``(Add 2 3)``, ``(Inc 41)``, ``(Eq x y)`` work in any cell.
 
-Arity coverage matches gallowglass's ``ALL_DEPS`` rather than the smaller
-``PRELUDE_INTRINSICS`` so that the core PLAN primitives (``Pin``, ``Law``,
-``Inc``, ``Elim``, ``Force``) are also available — the boot.plan source
-itself binds wrappers for both sets, and every op in ``ALL_DEPS`` has a
-matching implementation in ``runtime.plan._BPLAN_IMPLS``.
+Under Phase E (the Marduk swap), the runtime is :mod:`marduk.runtime` and
+the BPLAN op table is :mod:`marduk.runtime.bplan`. Wrappers for op names
+in ``ALL_DEPS`` that aren't yet implemented in Marduk's op table still
+*bind* successfully — the wrapper Law is constructed without evaluating
+its body — but calling them at runtime will raise NotImplementedError
+from the BPLAN dispatcher. Add the op upstream rather than working
+around it here.
 """
 
 from __future__ import annotations
 
-from .expander import Env, eval_form
-from .parser import parse_many
+from marduk.asm import Env, eval_form, parse_many
+from marduk.runtime.strnat import str_nat
+
 from .runtime.bplan_deps import ALL_DEPS
-from .runtime.plan import str_nat
 
 
 __all__ = ["PRELUDE_NAMES", "load_prelude"]

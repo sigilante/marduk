@@ -49,8 +49,8 @@ def test_each_prelude_entry_is_pin_of_law():
         val, is_macro = entry
         assert is_macro is False
         assert is_pin(val), f"{name} is not a Pin"
-        assert is_law(val.val), f"{name} pin doesn't wrap a Law"
-        assert val.val.arity == arity, f"{name} arity mismatch"
+        assert is_law(val.item), f"{name} pin doesn't wrap a Law"
+        assert val.item.args == arity, f"{name} arity mismatch"
 
 
 # ---------------------------------------------------------------------------

@@ -27,6 +27,7 @@ classifiers = [
 ]
 dependencies = [
     "ipykernel>=6.0",
+    "marduk",
 ]
 
 [project.optional-dependencies]
@@ -41,9 +42,6 @@ Repository = "https://github.com/sigilante/marduk"
 [tool.setuptools.packages.find]
 include = ["plan_kernel*"]
 exclude = ["tests*"]
-
-[tool.setuptools.package-data]
-"plan_kernel.runtime" = ["VENDOR.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
