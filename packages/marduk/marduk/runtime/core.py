@@ -114,33 +114,40 @@ class Val:
     so that ``update`` can mutate-in-place.
     """
 
-    __slots__ = ("box",)
+    __slots__ = ("box", "type")
     __match_args__ = ("val",)
+
+    # Lookup table indexed by ``len(box[0])`` for non-nat shapes.
+    # Construction goes through this once; ``.type`` then becomes a
+    # plain instance-attribute read (vs the original property that
+    # re-derived the type on every access — see profile in PR #100,
+    # ~30% of runtime).
+    _TYPE_BY_LEN = ("hol", "pin", "app", "law")
 
     def __init__(self, val: Any) -> None:
         self.box = [val]
+        if isinstance(val, int):
+            self.type = "nat"
+        else:
+            self.type = Val._TYPE_BY_LEN[len(val)]
 
     def update(self, other: "Val") -> None:
         """Replace self's contents with other's, in a way that aliases of
         either Val see the new value. Used by E (when stepping a saturated
         app cyclically updates its own cell) and by L (when a letrec slot
-        gets its computed binding installed)."""
+        gets its computed binding installed).
+
+        The cached ``type`` attribute is updated alongside the box swap so
+        consumers always observe a consistent (box, type) pair."""
         self.box[0] = other.box[0]
         self.box = other.box
+        self.type = other.type
 
     # ---- Attribute accessors driven by the data shape ------------------
 
     @property
     def val(self) -> Any:
         return self.box[0]
-
-    @property
-    def type(self) -> str:
-        v = self.box[0]
-        if isinstance(v, int):
-            return "nat"
-        # tuples of length 0, 1, 2, 3 → hol, pin, app, law
-        return ("hol", "pin", "app", "law")[len(v)]
 
     # nat
     @property
